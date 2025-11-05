@@ -1,4 +1,4 @@
-import os
+import sys
 from dotenv import dotenv_values
 from google import genai
 
@@ -7,11 +7,18 @@ config = dotenv_values(".env")
 api_key: str = config.get("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
-
 def main():
+    argc: int = len(sys.argv)
+    if argc < 2:
+        exit(1)
+
+    txt: str = f"{sys.argv[1]}"
+    if len(txt) == 0:
+        return
+
     res = client.models.generate_content(
         model="gemini-2.0-flash-001",
-        contents="Why is Boot.dev such a great place to learn backend development? Use one paragraph maximum."
+        contents=txt
     )
     print(res.text)
 
