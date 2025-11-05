@@ -4,7 +4,7 @@ from google import genai
 
 config = dotenv_values(".env")
 
-api_key: str = config.get("GEMINI_API_KEY")
+api_key: str|None =  config.get("GEMINI_API_KEY") if config.get("GEMINI_API_KEY") is not None else ""
 client = genai.Client(api_key=api_key)
 
 def main():
@@ -21,10 +21,8 @@ def main():
         contents=txt
     )
     print(res.text)
-
     meta = res.usage_metadata
-    print(f"Prompt tokens: {meta.prompt_token_count}\nResponse tokens: {
-          meta.candidates_token_count}")
+    print(f"Prompt tokens: {meta.prompt_token_count}\nResponse tokens: {meta.candidates_token_count}")
 
 
 if __name__ == "__main__":
