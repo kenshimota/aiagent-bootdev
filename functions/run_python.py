@@ -1,9 +1,11 @@
 import os
 import subprocess
 from typing import List
+from google.genai import types
+from config import WORKING_DIRECTORY
 
 
-def run_python_file(working_dir: str, file_path: str, args: List[str] = []) -> str:
+def run_python_file(file_path: str, working_dir: str = WORKING_DIRECTORY, args: List[str] = []) -> str:
     dir_allowed = os.path.abspath(working_dir)
     file_abs_path = os.path.abspath(os.path.join(dir_allowed, file_path))
 
@@ -33,3 +35,23 @@ def run_python_file(working_dir: str, file_path: str, args: List[str] = []) -> s
         output.append(f"Process exited with code {res.returncode}")
 
     return "\n".join(output) if len(output) > 0 else "Not output produced."
+
+
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Execute a Python file located within the working directory and return its output.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The file path relative to the working directory of the Python file to execute.",
+            ),
+            "args": types.Schema(
+                type=types.Type.ARRAY,
+                items=types.Schema(type=types.Type.STRING),
+                description="A list of arguments to pass to the Python file when executing it.",
+            )
+        }
+    )
+)

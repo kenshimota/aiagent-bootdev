@@ -1,7 +1,9 @@
 import os
+from google.genai import types
+from config import WORKING_DIRECTORY
 
 
-def get_files_info(working_directory, directory="."):
+def get_files_info(working_directory=WORKING_DIRECTORY, directory="."):
     abs_working_dir = os.path.abspath(working_directory)
     target_dir = os.path.abspath(os.path.join(working_directory, directory))
     if not target_dir.startswith(abs_working_dir):
@@ -21,3 +23,19 @@ def get_files_info(working_directory, directory="."):
         return "\n".join(files_info)
     except Exception as e:
         return f"Error listing files: {e}"
+
+
+schema_get_files_info = types.FunctionDeclaration(
+    name="get_files_info",
+    description="Get information about files in a specified directory within the working directory. Returns file names, sizes, and whether they are directories.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "directory": types.Schema(
+                type=types.Type.STRING,
+                description="The directory path relative to the working directory to list files from. Defaults to the working directory if not specified.",
+            ),
+        },
+        required=[],
+    ),
+)

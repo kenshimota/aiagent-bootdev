@@ -1,6 +1,9 @@
 import sys
-from dotenv import dotenv_values
 from google import genai
+from google.genai import types
+from dotenv import dotenv_values
+from functions.tool_functions import available_functions, procedure_fn
+from functions.logger import Logger
 
 config = dotenv_values(".env")
 
@@ -8,18 +11,20 @@ api_key: str | None = config.get("GEMINI_API_KEY") if config.get(
     "GEMINI_API_KEY") is not None else ""
 client = genai.Client(api_key=api_key)
 
+system_prompt = """
+You are a helpful AI coding agent.
 
-class Logger():
-    def __init__(self) -> None:
-        self.is_enabled: bool = False
+When a user asks a question or makes a request, make a function call plan. You can perform the following operations:
 
-        for command in sys.argv:
-            if command.strip().lower() == "--verbose":
-                self.is_enabled = True
-
-    def info(self, message: str) -> None:
-        if self.is_enabled:
-            print(message)
+- List files and directories
+All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+- Read file contents
+Read files only within the working directory.
+- Execute Python files with optional arguments
+Execute only Python files within the working directory. and provide any necessary arguments.
+- Write or overwrite files
+Write files only within the working directory. each time you write to a file, you overwrite its previous contents.
+"""
 
 
 def main():
@@ -32,18 +37,23 @@ def main():
         return
 
     logger = Logger()
-    logger.info(f"User prompt: {txt}\n")
+    logger.debug(f"User prompt: {txt}\n")
 
     res = client.models.generate_content(
         model="gemini-2.0-flash-001",
-        contents=txt
+        contents=txt,
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt, tools=[available_functions])
     )
 
     meta = res.usage_metadata
-    logger.info(f"Prompt tokens: {meta.prompt_token_count}\nResponse tokens: {
-                meta.candidates_token_count}")
+    logger.debug(f"Prompt tokens: {meta.prompt_token_count}\nResponse tokens: {
+        meta.candidates_token_count}")
 
-    print(f"Response:\n {res.text}")
+    for function_call_part in res.function_calls:
+        procedure_response = procedure_fn(function_call_part)
+        res = procedure_response.parts[0].function_response
+        logger.debug(f"-> {res}")
 
 
 if __name__ == "__main__":
